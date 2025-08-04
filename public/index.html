@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jamboard Clone Online</title>
+    <title>Jamboard Clone Simples</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             font-family: 'Roboto', Arial, sans-serif;
-            overflow: hidden;
             background-color: #f0f0f0;
         }
         
@@ -43,12 +42,6 @@
             background-color: #f1f3f4;
         }
         
-        .tool-icon {
-            width: 24px;
-            height: 24px;
-            margin-right: 8px;
-        }
-        
         #canvas-container {
             position: absolute;
             top: 60px;
@@ -66,24 +59,8 @@
             margin: 20px;
             min-width: 1600px;
             min-height: 900px;
-            transform-origin: 0 0;
         }
         
-        /* Estilos para Stickers */
-        .sticker {
-            position: absolute;
-            cursor: move;
-            user-select: none;
-            width: 60px;
-            height: 60px;
-            transition: transform 0.1s;
-        }
-        
-        .sticker:hover {
-            transform: scale(1.1);
-        }
-        
-        /* Estilos para Post-its */
         .post-it {
             position: absolute;
             width: 200px;
@@ -91,6 +68,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
+            background-color: #FFF475; /* Amarelo padrão */
         }
         
         .post-it-header {
@@ -100,19 +78,13 @@
             padding: 8px;
             cursor: move;
             border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
-        
-        .post-it-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
+            background-color: rgba(0,0,0,0.05);
         }
         
         .post-it-close {
             cursor: pointer;
             font-size: 18px;
             color: #555;
-            margin-left: 8px;
         }
         
         .post-it-content {
@@ -124,421 +96,72 @@
             min-height: 100px;
         }
         
-        /* Cores dos Post-its */
-        .post-it-yellow {
-            background-color: #FFF475;
-        }
-        
-        .post-it-blue {
-            background-color: #D7AEFB;
-        }
-        
-        .post-it-green {
-            background-color: #CCFF90;
-        }
-        
-        .post-it-pink {
-            background-color: #FDCFF8;
-        }
-        
-        .post-it-purple {
-            background-color: #AECBFA;
-        }
-        
-        /* Painéis de seleção */
-        .selection-panel {
+        .sticker {
             position: absolute;
-            top: 70px;
-            left: 20px;
-            width: 300px;
-            background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            border-radius: 8px;
-            padding: 15px;
-            z-index: 101;
-            display: none;
-        }
-        
-        .panel-title {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 16px;
-            color: #202124;
-        }
-        
-        .close-panel {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            font-size: 20px;
-            color: #5f6368;
-        }
-        
-        .sticker-grid, .post-it-colors {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-        }
-        
-        .sticker-option {
+            cursor: move;
             width: 60px;
             height: 60px;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        
-        .sticker-option:hover {
-            transform: scale(1.1);
-        }
-        
-        .color-option {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            margin: 0 auto;
-            border: 2px solid transparent;
-        }
-        
-        .color-option:hover {
-            border-color: #202124;
-        }
-        
-        .selected-color {
-            border-color: #202124 !important;
-            transform: scale(1.1);
-        }
-        
-        /* Compartilhamento */
-        #share-panel {
-            position: absolute;
-            top: 70px;
-            right: 20px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 101;
-        }
-        
-        #share-link {
-            width: 300px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        
-        #copy-link {
-            background: #1a73e8;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
     <div id="toolbar">
-        <button class="tool-btn" id="sticker-tool">
-            <span class="material-icons tool-icon">mood</span>
-            <span>Sticker</span>
-        </button>
-        
         <button class="tool-btn" id="postit-tool">
-            <span class="material-icons tool-icon">note</span>
+            <span class="material-icons">note</span>
             <span>Post-it</span>
         </button>
-        
-        <div style="flex-grow: 1;"></div>
-        
-        <button class="tool-btn" id="share-btn">
-            <span class="material-icons tool-icon">share</span>
-            <span>Compartilhar</span>
+        <button class="tool-btn" id="sticker-tool">
+            <span class="material-icons">mood</span>
+            <span>Sticker</span>
         </button>
     </div>
     
     <div id="canvas-container">
         <div id="jamboard-canvas"></div>
     </div>
-    
-    <!-- Painel de Seleção de Stickers -->
-    <div class="selection-panel" id="sticker-panel">
-        <span class="close-panel">×</span>
-        <h3 class="panel-title">Stickers</h3>
-        <div class="sticker-grid">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg" class="sticker-option" data-sticker="happy">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_excited/default/48px.svg" class="sticker-option" data-sticker="excited">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_sad/default/48px.svg" class="sticker-option" data-sticker="sad">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/thumb_up/default/48px.svg" class="sticker-option" data-sticker="thumbs-up">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/star/default/48px.svg" class="sticker-option" data-sticker="star">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/favorite/default/48px.svg" class="sticker-option" data-sticker="heart">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/celebration/default/48px.svg" class="sticker-option" data-sticker="celebration">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/check_circle/default/48px.svg" class="sticker-option" data-sticker="check">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/priority_high/default/48px.svg" class="sticker-option" data-sticker="priority">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/lightbulb/default/48px.svg" class="sticker-option" data-sticker="idea">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/question_mark/default/48px.svg" class="sticker-option" data-sticker="question">
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/warning/default/48px.svg" class="sticker-option" data-sticker="warning">
-        </div>
-    </div>
-    
-    <!-- Painel de Seleção de Cores para Post-its -->
-    <div class="selection-panel" id="postit-panel">
-        <span class="close-panel">×</span>
-        <h3 class="panel-title">Escolha a cor do Post-it</h3>
-        <div class="post-it-colors">
-            <div class="color-option selected-color" style="background-color: #FFF475;" data-color="yellow"></div>
-            <div class="color-option" style="background-color: #D7AEFB;" data-color="blue"></div>
-            <div class="color-option" style="background-color: #CCFF90;" data-color="green"></div>
-            <div class="color-option" style="background-color: #FDCFF8;" data-color="pink"></div>
-            <div class="color-option" style="background-color: #AECBFA;" data-color="purple"></div>
-        </div>
-    </div>
-    
-    <!-- Painel de Compartilhamento -->
-    <div class="selection-panel" id="share-panel" style="display: none;">
-        <span class="close-panel">×</span>
-        <h3 class="panel-title">Compartilhar Quadro</h3>
-        <p>Compartilhe este link para colaboração em tempo real:</p>
-        <input type="text" id="share-link" readonly>
-        <button id="copy-link">Copiar Link</button>
-    </div>
-    
+
     <script>
-        // Configuração do Firebase (substitua com suas credenciais)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBO0l_QRSXEkcOc0Rpe9l9Uasj5q2aaNJ0",
-            authDomain: "jamboarde-65f0d.firebaseapp.com",
-            databaseURL: "https://jamboarde-65f0d-default-rtdb.firebaseio.com",
-            projectId: "jamboarde-65f0d",
-            storageBucket: "jamboarde-65f0d.firebasestorage.app",
-            messagingSenderId: "522289468110",
-            appId: "1:522289468110:web:2b2b1a44c37b6da865f69f"
-        };
-        
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        
         document.addEventListener('DOMContentLoaded', function() {
             const canvas = document.getElementById('jamboard-canvas');
-            let currentColor = 'yellow';
-            let boardId = getBoardIdFromURL();
-            let elements = {};
             
-            // Se não houver ID na URL, cria um novo quadro
-            if (!boardId) {
-                boardId = generateBoardId();
-                window.history.pushState({}, '', `?board=${boardId}`);
-            }
-            
-            // Atualizar link de compartilhamento
-            updateShareLink();
-            
-            // Carregar quadro existente
-            loadBoard(boardId);
-            
-            // Abrir painel de stickers
-            document.getElementById('sticker-tool').addEventListener('click', function() {
-                document.getElementById('sticker-panel').style.display = 'block';
-                document.getElementById('postit-panel').style.display = 'none';
-                document.getElementById('share-panel').style.display = 'none';
-            });
-            
-            // Abrir painel de post-its
+            // Adicionar post-it
             document.getElementById('postit-tool').addEventListener('click', function() {
-                document.getElementById('postit-panel').style.display = 'block';
-                document.getElementById('sticker-panel').style.display = 'none';
-                document.getElementById('share-panel').style.display = 'none';
+                addPostIt();
             });
             
-            // Abrir painel de compartilhamento
-            document.getElementById('share-btn').addEventListener('click', function() {
-                document.getElementById('share-panel').style.display = 'block';
-                document.getElementById('sticker-panel').style.display = 'none';
-                document.getElementById('postit-panel').style.display = 'none';
+            // Adicionar sticker
+            document.getElementById('sticker-tool').addEventListener('click', function() {
+                addSticker('happy');
             });
             
-            // Fechar painéis
-            document.querySelectorAll('.close-panel').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    this.closest('.selection-panel').style.display = 'none';
-                });
-            });
-            
-            // Copiar link de compartilhamento
-            document.getElementById('copy-link').addEventListener('click', function() {
-                const shareLink = document.getElementById('share-link');
-                shareLink.select();
-                document.execCommand('copy');
-                alert('Link copiado para a área de transferência!');
-            });
-            
-            // Selecionar cor do post-it
-            document.querySelectorAll('.color-option').forEach(option => {
-                option.addEventListener('click', function() {
-                    document.querySelectorAll('.color-option').forEach(opt => {
-                        opt.classList.remove('selected-color');
-                    });
-                    this.classList.add('selected-color');
-                    currentColor = this.getAttribute('data-color');
-                    addPostIt();
-                    document.getElementById('postit-panel').style.display = 'none';
-                });
-            });
-            
-            // Adicionar sticker selecionado
-            document.querySelectorAll('.sticker-option').forEach(sticker => {
-                sticker.addEventListener('click', function() {
-                    const type = this.getAttribute('data-sticker');
-                    addSticker(type);
-                    document.getElementById('sticker-panel').style.display = 'none';
-                });
-            });
-            
-            // Função para gerar ID do quadro
-            function generateBoardId() {
-                return 'board-' + Math.random().toString(36).substr(2, 9);
-            }
-            
-            // Função para obter ID do quadro da URL
-            function getBoardIdFromURL() {
-                const urlParams = new URLSearchParams(window.location.search);
-                return urlParams.get('board');
-            }
-            
-            // Função para atualizar link de compartilhamento
-            function updateShareLink() {
-                const shareLink = document.getElementById('share-link');
-                shareLink.value = window.location.href;
-            }
-            
-            // Função para carregar quadro existente
-            function loadBoard(boardId) {
-                const boardRef = database.ref(`boards/${boardId}`);
-                
-                boardRef.on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        // Limpar canvas
-                        canvas.innerHTML = '';
-                        elements = {};
-                        
-                        // Carregar elementos
-                        for (const elementId in data.elements) {
-                            const element = data.elements[elementId];
-                            if (element.type === 'sticker') {
-                                addStickerFromData(elementId, element);
-                            } else if (element.type === 'postit') {
-                                addPostItFromData(elementId, element);
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // Função para adicionar sticker com sincronização
-            function addSticker(type) {
-                const elementId = 'element-' + Date.now();
-                const sticker = document.createElement('img');
-                sticker.className = 'sticker';
-                sticker.id = elementId;
-                sticker.setAttribute('draggable', 'false');
-                
-                // Posição centralizada no canvas visível
-                const canvasRect = canvas.getBoundingClientRect();
-                const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
-                
-                const left = (containerRect.width / 2 - canvasRect.left) - 30;
-                const top = (containerRect.height / 2 - canvasRect.top) - 30;
-                
-                sticker.style.left = `${left}px`;
-                sticker.style.top = `${top}px`;
-                
-                // Configurar sticker
-                sticker.src = getStickerUrl(type);
-                
-                // Adicionar ao Firebase
-                database.ref(`boards/${boardId}/elements/${elementId}`).set({
-                    type: 'sticker',
-                    stickerType: type,
-                    left: left,
-                    top: top
-                });
-                
-                makeDraggable(sticker, elementId);
-                canvas.appendChild(sticker);
-            }
-            
-            // Função para adicionar sticker a partir dos dados
-            function addStickerFromData(elementId, data) {
-                const sticker = document.createElement('img');
-                sticker.className = 'sticker';
-                sticker.id = elementId;
-                sticker.setAttribute('draggable', 'false');
-                
-                sticker.style.left = `${data.left}px`;
-                sticker.style.top = `${data.top}px`;
-                sticker.src = getStickerUrl(data.stickerType);
-                
-                makeDraggable(sticker, elementId);
-                canvas.appendChild(sticker);
-            }
-            
-            // Função para adicionar post-it com sincronização
             function addPostIt() {
-                const elementId = 'element-' + Date.now();
                 const postIt = document.createElement('div');
-                postIt.className = `post-it post-it-${currentColor}`;
-                postIt.id = elementId;
+                postIt.className = 'post-it';
                 
-                // Posição centralizada no canvas visível
-                const canvasRect = canvas.getBoundingClientRect();
-                const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+                // Posição centralizada
+                postIt.style.left = '100px';
+                postIt.style.top = '100px';
                 
-                const left = (containerRect.width / 2 - canvasRect.left) - 100;
-                const top = (containerRect.height / 2 - canvasRect.top) - 75;
-                
-                postIt.style.left = `${left}px`;
-                postIt.style.top = `${top}px`;
-                
-                // Cabeçalho do post-it (área de movimentação)
+                // Cabeçalho do post-it
                 const header = document.createElement('div');
                 header.className = 'post-it-header';
-                
-                const colorDot = document.createElement('div');
-                colorDot.className = 'post-it-color';
-                colorDot.style.backgroundColor = getColorValue(currentColor);
                 
                 const closeBtn = document.createElement('span');
                 closeBtn.className = 'post-it-close material-icons';
                 closeBtn.textContent = 'close';
-                closeBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    // Remover do Firebase
-                    database.ref(`boards/${boardId}/elements/${elementId}`).remove();
+                closeBtn.addEventListener('click', function() {
                     postIt.remove();
                 });
                 
-                header.appendChild(colorDot);
                 header.appendChild(closeBtn);
                 
-                // Conteúdo do post-it (área de edição)
+                // Conteúdo do post-it
                 const content = document.createElement('div');
                 content.className = 'post-it-content';
                 content.contentEditable = true;
                 content.textContent = 'Clique para editar...';
-                
-                content.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
                 
                 content.addEventListener('focus', function() {
                     if (this.textContent === 'Clique para editar...') {
@@ -550,30 +173,14 @@
                     if (this.textContent.trim() === '') {
                         this.textContent = 'Clique para editar...';
                     }
-                    // Atualizar no Firebase
-                    database.ref(`boards/${boardId}/elements/${elementId}/content`).set(this.textContent);
-                });
-                
-                // Atualizar conteúdo em tempo real
-                content.addEventListener('input', function() {
-                    database.ref(`boards/${boardId}/elements/${elementId}/content`).set(this.textContent);
                 });
                 
                 // Montar o post-it
                 postIt.appendChild(header);
                 postIt.appendChild(content);
                 
-                // Adicionar ao Firebase
-                database.ref(`boards/${boardId}/elements/${elementId}`).set({
-                    type: 'postit',
-                    color: currentColor,
-                    left: left,
-                    top: top,
-                    content: 'Clique para editar...'
-                });
-                
                 // Tornar arrastável apenas pelo cabeçalho
-                makeDraggable(postIt, elementId, header);
+                makeDraggable(postIt, header);
                 canvas.appendChild(postIt);
                 
                 // Focar no conteúdo
@@ -582,146 +189,49 @@
                 }, 0);
             }
             
-            // Função para adicionar post-it a partir dos dados
-            function addPostItFromData(elementId, data) {
-                const postIt = document.createElement('div');
-                postIt.className = `post-it post-it-${data.color}`;
-                postIt.id = elementId;
-                postIt.style.left = `${data.left}px`;
-                postIt.style.top = `${data.top}px`;
+            function addSticker(type) {
+                const sticker = document.createElement('img');
+                sticker.className = 'sticker';
+                sticker.src = getStickerUrl(type);
+                sticker.style.left = '200px';
+                sticker.style.top = '200px';
                 
-                // Cabeçalho do post-it (área de movimentação)
-                const header = document.createElement('div');
-                header.className = 'post-it-header';
-                
-                const colorDot = document.createElement('div');
-                colorDot.className = 'post-it-color';
-                colorDot.style.backgroundColor = getColorValue(data.color);
-                
-                const closeBtn = document.createElement('span');
-                closeBtn.className = 'post-it-close material-icons';
-                closeBtn.textContent = 'close';
-                closeBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    // Remover do Firebase
-                    database.ref(`boards/${boardId}/elements/${elementId}`).remove();
-                    postIt.remove();
-                });
-                
-                header.appendChild(colorDot);
-                header.appendChild(closeBtn);
-                
-                // Conteúdo do post-it (área de edição)
-                const content = document.createElement('div');
-                content.className = 'post-it-content';
-                content.contentEditable = true;
-                content.textContent = data.content || 'Clique para editar...';
-                
-                content.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-                
-                content.addEventListener('focus', function() {
-                    if (this.textContent === 'Clique para editar...') {
-                        this.textContent = '';
-                    }
-                });
-                
-                content.addEventListener('blur', function() {
-                    if (this.textContent.trim() === '') {
-                        this.textContent = 'Clique para editar...';
-                    }
-                    // Atualizar no Firebase
-                    database.ref(`boards/${boardId}/elements/${elementId}/content`).set(this.textContent);
-                });
-                
-                content.addEventListener('input', function() {
-                    database.ref(`boards/${boardId}/elements/${elementId}/content`).set(this.textContent);
-                });
-                
-                // Montar o post-it
-                postIt.appendChild(header);
-                postIt.appendChild(content);
-                
-                // Tornar arrastável apenas pelo cabeçalho
-                makeDraggable(postIt, elementId, header);
-                canvas.appendChild(postIt);
+                makeDraggable(sticker);
+                canvas.appendChild(sticker);
             }
             
-            // Função para obter URL do sticker
             function getStickerUrl(type) {
-                const stickers = {
-                    happy: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg',
-                    excited: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_excited/default/48px.svg',
-                    sad: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_sad/default/48px.svg',
-                    'thumbs-up': 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/thumb_up/default/48px.svg',
-                    star: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/star/default/48px.svg',
-                    heart: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/favorite/default/48px.svg',
-                    celebration: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/celebration/default/48px.svg',
-                    check: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/check_circle/default/48px.svg',
-                    priority: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/priority_high/default/48px.svg',
-                    idea: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/lightbulb/default/48px.svg',
-                    question: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/question_mark/default/48px.svg',
-                    warning: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/warning/default/48px.svg'
-                };
-                return stickers[type] || stickers['happy'];
+                return 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg';
             }
             
-            // Função auxiliar para obter valor da cor
-            function getColorValue(colorName) {
-                const colors = {
-                    yellow: '#FFF475',
-                    blue: '#D7AEFB',
-                    green: '#CCFF90',
-                    pink: '#FDCFF8',
-                    purple: '#AECBFA'
-                };
-                return colors[colorName] || '#FFF475';
-            }
-            
-            // Função para tornar elementos arrastáveis com sincronização
-            function makeDraggable(element, elementId, dragHandle = element) {
+            function makeDraggable(element, dragHandle = element) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                
                 dragHandle.onmousedown = dragMouseDown;
                 
                 function dragMouseDown(e) {
                     e = e || window.event;
                     e.preventDefault();
-                    
-                    // Obter a posição inicial do mouse
-                    const startX = e.clientX;
-                    const startY = e.clientY;
-                    const startLeft = parseInt(element.style.left) || 0;
-                    const startTop = parseInt(element.style.top) || 0;
-                    
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
                     document.onmouseup = closeDragElement;
                     document.onmousemove = elementDrag;
-                    
-                    function elementDrag(e) {
-                        e = e || window.event;
-                        e.preventDefault();
-                        
-                        // Calcular a nova posição
-                        const dx = e.clientX - startX;
-                        const dy = e.clientY - startY;
-                        const newLeft = startLeft + dx;
-                        const newTop = startTop + dy;
-                        
-                        // Atualizar posição local
-                        element.style.left = `${newLeft}px`;
-                        element.style.top = `${newTop}px`;
-                        
-                        // Atualizar no Firebase
-                        database.ref(`boards/${boardId}/elements/${elementId}`).update({
-                            left: newLeft,
-                            top: newTop
-                        });
-                    }
-                    
-                    function closeDragElement() {
-                        // Remover os event listeners quando soltar o mouse
-                        document.onmouseup = null;
-                        document.onmousemove = null;
-                    }
+                }
+                
+                function elementDrag(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    element.style.top = (element.offsetTop - pos2) + "px";
+                    element.style.left = (element.offsetLeft - pos1) + "px";
+                }
+                
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
                 }
             }
         });
