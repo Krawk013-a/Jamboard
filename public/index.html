@@ -88,9 +88,7 @@
             position: absolute;
             width: 200px;
             min-height: 150px;
-            padding: 12px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            cursor: move;
             display: flex;
             flex-direction: column;
         }
@@ -98,26 +96,32 @@
         .post-it-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            align-items: center;
+            padding: 8px;
+            cursor: move;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
         }
         
         .post-it-color {
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            cursor: pointer;
         }
         
         .post-it-close {
             cursor: pointer;
             font-size: 18px;
             color: #555;
+            margin-left: 8px;
         }
         
         .post-it-content {
             flex-grow: 1;
+            padding: 12px;
             outline: none;
             overflow-wrap: break-word;
+            cursor: text;
+            min-height: 100px;
         }
         
         /* Cores dos Post-its */
@@ -380,7 +384,7 @@
                 postIt.style.left = `${left}px`;
                 postIt.style.top = `${top}px`;
                 
-                // Cabeçalho do post-it
+                // Cabeçalho do post-it (área de movimentação)
                 const header = document.createElement('div');
                 header.className = 'post-it-header';
                 
@@ -391,18 +395,23 @@
                 const closeBtn = document.createElement('span');
                 closeBtn.className = 'post-it-close material-icons';
                 closeBtn.textContent = 'close';
-                closeBtn.addEventListener('click', function() {
+                closeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
                     postIt.remove();
                 });
                 
                 header.appendChild(colorDot);
                 header.appendChild(closeBtn);
                 
-                // Conteúdo do post-it
+                // Conteúdo do post-it (área de edição)
                 const content = document.createElement('div');
                 content.className = 'post-it-content';
                 content.contentEditable = true;
                 content.textContent = 'Clique para editar...';
+                
+                content.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Impede a movimentação ao clicar no conteúdo
+                });
                 
                 content.addEventListener('focus', function() {
                     if (this.textContent === 'Clique para editar...') {
@@ -420,7 +429,8 @@
                 postIt.appendChild(header);
                 postIt.appendChild(content);
                 
-                makeDraggable(postIt);
+                // Tornar arrastável apenas pelo cabeçalho
+                makeDraggable(postIt, header);
                 canvas.appendChild(postIt);
                 
                 // Focar no conteúdo
@@ -441,21 +451,20 @@
                 return colors[colorName] || '#FFF475';
             }
             
-            // Função para tornar elementos arrastáveis
-            function makeDraggable(element) {
+            // Função para tornar elementos arrastáveis (com elemento de controle opcional)
+            function makeDraggable(element, dragHandle = element) {
                 let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
                 
-                element.onmousedown = dragMouseDown;
+                dragHandle.onmousedown = dragMouseDown;
                 
                 function dragMouseDown(e) {
                     e = e || window.event;
                     e.preventDefault();
                     
-                    // Não arrastar se estiver editando texto
-                    if (e.target.contentEditable === 'true') return;
-                    
+                    // Obter a posição inicial do mouse
                     pos3 = e.clientX;
                     pos4 = e.clientY;
+                    
                     document.onmouseup = closeDragElement;
                     document.onmousemove = elementDrag;
                 }
@@ -463,27 +472,20 @@
                 function elementDrag(e) {
                     e = e || window.event;
                     e.preventDefault();
+                    
+                    // Calcular a nova posição
                     pos1 = pos3 - e.clientX;
                     pos2 = pos4 - e.clientY;
                     pos3 = e.clientX;
                     pos4 = e.clientY;
                     
-                    // Calcular nova posição
-                    const newTop = element.offsetTop - pos2;
-                    const newLeft = element.offsetLeft - pos1;
-                    
-                    // Limitar ao canvas
-                    const canvasRect = canvas.getBoundingClientRect();
-                    if (newTop >= 0 && newTop <= canvasRect.height - element.offsetHeight) {
-                        element.style.top = newTop + "px";
-                    }
-                    
-                    if (newLeft >= 0 && newLeft <= canvasRect.width - element.offsetWidth) {
-                        element.style.left = newLeft + "px";
-                    }
+                    // Atualizar a posição do elemento
+                    element.style.top = (element.offsetTop - pos2) + "px";
+                    element.style.left = (element.offsetLeft - pos1) + "px";
                 }
                 
                 function closeDragElement() {
+                    // Remover os event listeners quando soltar o mouse
                     document.onmouseup = null;
                     document.onmousemove = null;
                 }
