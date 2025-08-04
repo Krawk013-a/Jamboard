@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jamboard Clone</title>
+    <title>Jamboard Clone - Stickers e Post-its</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Google Sans', Arial, sans-serif;
+            font-family: 'Roboto', Arial, sans-serif;
             overflow: hidden;
+            background-color: #f0f0f0;
         }
         
         #toolbar {
@@ -18,7 +19,7 @@
             left: 0;
             width: 100%;
             height: 60px;
-            background-color: #f1f3f4;
+            background-color: #fff;
             display: flex;
             align-items: center;
             padding: 0 20px;
@@ -35,10 +36,11 @@
             cursor: pointer;
             display: flex;
             align-items: center;
+            font-size: 14px;
         }
         
         .tool-btn:hover {
-            background-color: #e0e0e0;
+            background-color: #f1f3f4;
         }
         
         .tool-icon {
@@ -62,337 +64,381 @@
             background-color: white;
             box-shadow: 0 1px 3px rgba(0,0,0,0.12);
             margin: 20px;
+            min-width: 1600px;
+            min-height: 900px;
             transform-origin: 0 0;
         }
         
+        /* Estilos para Stickers */
         .sticker {
             position: absolute;
             cursor: move;
             user-select: none;
+            width: 60px;
+            height: 60px;
+            transition: transform 0.1s;
         }
         
-        .text-box {
-            position: absolute;
-            min-width: 100px;
-            min-height: 30px;
-            border: 2px dashed #4285f4;
-            padding: 5px;
-            cursor: text;
+        .sticker:hover {
+            transform: scale(1.1);
         }
         
-        .sticker-panel, .image-panel {
+        /* Estilos para Post-its */
+        .post-it {
             position: absolute;
-            top: 60px;
+            width: 200px;
+            min-height: 150px;
+            padding: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: move;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .post-it-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .post-it-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .post-it-close {
+            cursor: pointer;
+            font-size: 18px;
+            color: #555;
+        }
+        
+        .post-it-content {
+            flex-grow: 1;
+            outline: none;
+            overflow-wrap: break-word;
+        }
+        
+        /* Cores dos Post-its */
+        .post-it-yellow {
+            background-color: #FFF475;
+        }
+        
+        .post-it-blue {
+            background-color: #D7AEFB;
+        }
+        
+        .post-it-green {
+            background-color: #CCFF90;
+        }
+        
+        .post-it-pink {
+            background-color: #FDCFF8;
+        }
+        
+        .post-it-purple {
+            background-color: #AECBFA;
+        }
+        
+        /* Painéis de seleção */
+        .selection-panel {
+            position: absolute;
+            top: 70px;
             left: 20px;
             width: 300px;
             background: white;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             border-radius: 8px;
-            padding: 10px;
+            padding: 15px;
             z-index: 101;
             display: none;
         }
         
-        .sticker-item, .image-option {
-            width: 80px;
-            height: 80px;
-            margin: 5px;
-            cursor: pointer;
-            object-fit: contain;
+        .panel-title {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #202124;
         }
         
         .close-panel {
             position: absolute;
-            top: 5px;
-            right: 5px;
+            top: 10px;
+            right: 10px;
             cursor: pointer;
+            font-size: 20px;
+            color: #5f6368;
+        }
+        
+        .sticker-grid, .post-it-colors {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        
+        .sticker-option {
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .sticker-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin: 0 auto;
+            border: 2px solid transparent;
+        }
+        
+        .color-option:hover {
+            border-color: #202124;
+        }
+        
+        .selected-color {
+            border-color: #202124 !important;
+            transform: scale(1.1);
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
     <div id="toolbar">
-        <button class="tool-btn" id="select-tool">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/select_all/v11/24px.svg" class="tool-icon" alt="Selecionar">
-            <span>Selecionar</span>
-        </button>
-        
-        <button class="tool-btn" id="pen-tool">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/gesture/v11/24px.svg" class="tool-icon" alt="Caneta">
-            <span>Caneta</span>
-        </button>
-        
-        <button class="tool-btn" id="eraser-tool">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/ink_eraser/v11/24px.svg" class="tool-icon" alt="Borracha">
-            <span>Borracha</span>
-        </button>
-        
-        <button class="tool-btn" id="text-tool">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/text_fields/v11/24px.svg" class="tool-icon" alt="Texto">
-            <span>Texto</span>
-        </button>
-        
         <button class="tool-btn" id="sticker-tool">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/insert_emoticon/v11/24px.svg" class="tool-icon" alt="Sticker">
+            <span class="material-icons tool-icon">mood</span>
             <span>Sticker</span>
         </button>
         
-        <button class="tool-btn" id="image-tool">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/insert_photo/v11/24px.svg" class="tool-icon" alt="Imagem">
-            <span>Imagem</span>
-        </button>
-        
-        <div style="flex-grow: 1;"></div>
-        
-        <button class="tool-btn" id="zoom-in">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/zoom_in/v11/24px.svg" class="tool-icon" alt="Zoom In">
-        </button>
-        
-        <button class="tool-btn" id="zoom-out">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/zoom_out/v11/24px.svg" class="tool-icon" alt="Zoom Out">
+        <button class="tool-btn" id="postit-tool">
+            <span class="material-icons tool-icon">note</span>
+            <span>Post-it</span>
         </button>
     </div>
     
     <div id="canvas-container">
-        <div id="jamboard-canvas" style="width: 1600px; height: 900px;"></div>
+        <div id="jamboard-canvas"></div>
     </div>
     
-    <div class="sticker-panel" id="sticker-panel">
+    <!-- Painel de Seleção de Stickers -->
+    <div class="selection-panel" id="sticker-panel">
         <span class="close-panel">×</span>
-        <h3>Stickers</h3>
-        <div id="sticker-list">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/sentiment_satisfied/v11/24px.svg" class="sticker-item" data-sticker="happy">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/sentiment_dissatisfied/v11/24px.svg" class="sticker-item" data-sticker="sad">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/thumb_up/v11/24px.svg" class="sticker-item" data-sticker="thumbs-up">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/star/v11/24px.svg" class="sticker-item" data-sticker="star">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/check_circle/v11/24px.svg" class="sticker-item" data-sticker="check">
-            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/priority_high/v11/24px.svg" class="sticker-item" data-sticker="priority">
+        <h3 class="panel-title">Stickers</h3>
+        <div class="sticker-grid">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg" class="sticker-option" data-sticker="happy">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_excited/default/48px.svg" class="sticker-option" data-sticker="excited">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_sad/default/48px.svg" class="sticker-option" data-sticker="sad">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/thumb_up/default/48px.svg" class="sticker-option" data-sticker="thumbs-up">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/star/default/48px.svg" class="sticker-option" data-sticker="star">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/favorite/default/48px.svg" class="sticker-option" data-sticker="heart">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/celebration/default/48px.svg" class="sticker-option" data-sticker="celebration">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/check_circle/default/48px.svg" class="sticker-option" data-sticker="check">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/priority_high/default/48px.svg" class="sticker-option" data-sticker="priority">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/lightbulb/default/48px.svg" class="sticker-option" data-sticker="idea">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/question_mark/default/48px.svg" class="sticker-option" data-sticker="question">
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/warning/default/48px.svg" class="sticker-option" data-sticker="warning">
         </div>
     </div>
     
-    <div class="image-panel" id="image-panel">
+    <!-- Painel de Seleção de Cores para Post-its -->
+    <div class="selection-panel" id="postit-panel">
         <span class="close-panel">×</span>
-        <h3>Inserir Imagem</h3>
-        <input type="file" id="image-upload" accept="image/*">
-        <div id="image-options">
-            <h4>Imagens de exemplo</h4>
-            <img src="https://via.placeholder.com/150" class="image-option" data-image="placeholder1">
-            <img src="https://via.placeholder.com/150/0000FF/FFFFFF" class="image-option" data-image="placeholder2">
+        <h3 class="panel-title">Escolha a cor do Post-it</h3>
+        <div class="post-it-colors">
+            <div class="color-option selected-color" style="background-color: #FFF475;" data-color="yellow"></div>
+            <div class="color-option" style="background-color: #D7AEFB;" data-color="blue"></div>
+            <div class="color-option" style="background-color: #CCFF90;" data-color="green"></div>
+            <div class="color-option" style="background-color: #FDCFF8;" data-color="pink"></div>
+            <div class="color-option" style="background-color: #AECBFA;" data-color="purple"></div>
         </div>
     </div>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const canvas = document.getElementById('jamboard-canvas');
-            const canvasContainer = document.getElementById('canvas-container');
-            let currentTool = 'select';
-            let isDrawing = false;
-            let lastX = 0;
-            let lastY = 0;
-            let scale = 1;
+            let currentColor = 'yellow';
             
-            // Ferramentas
-            document.getElementById('select-tool').addEventListener('click', () => currentTool = 'select');
-            document.getElementById('pen-tool').addEventListener('click', () => currentTool = 'pen');
-            document.getElementById('eraser-tool').addEventListener('click', () => currentTool = 'eraser');
-            document.getElementById('text-tool').addEventListener('click', addTextBox);
-            document.getElementById('sticker-tool').addEventListener('click', showStickerPanel);
-            document.getElementById('image-tool').addEventListener('click', showImagePanel);
-            
-            // Zoom
-            document.getElementById('zoom-in').addEventListener('click', () => {
-                scale += 0.1;
-                canvas.style.transform = `scale(${scale})`;
-            });
-            
-            document.getElementById('zoom-out').addEventListener('click', () => {
-                if (scale > 0.2) {
-                    scale -= 0.1;
-                    canvas.style.transform = `scale(${scale})`;
-                }
-            });
-            
-            // Desenho com caneta
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
-            
-            function startDrawing(e) {
-                if (currentTool === 'pen' || currentTool === 'eraser') {
-                    isDrawing = true;
-                    [lastX, lastY] = [e.offsetX, e.offsetY];
-                    
-                    const dot = document.createElement('div');
-                    dot.style.position = 'absolute';
-                    dot.style.left = `${lastX}px`;
-                    dot.style.top = `${lastY}px`;
-                    dot.style.width = currentTool === 'pen' ? '3px' : '10px';
-                    dot.style.height = currentTool === 'pen' ? '3px' : '10px';
-                    dot.style.backgroundColor = currentTool === 'pen' ? '#000' : '#f9f9f9';
-                    dot.style.borderRadius = '50%';
-                    canvas.appendChild(dot);
-                }
-            }
-            
-            function draw(e) {
-                if (!isDrawing) return;
-                
-                if (currentTool === 'pen' || currentTool === 'eraser') {
-                    const line = document.createElement('div');
-                    line.style.position = 'absolute';
-                    line.style.left = `${lastX}px`;
-                    line.style.top = `${lastY}px`;
-                    
-                    const width = Math.sqrt(Math.pow(e.offsetX - lastX, 2) + Math.pow(e.offsetY - lastY, 2));
-                    const angle = Math.atan2(e.offsetY - lastY, e.offsetX - lastX) * 180 / Math.PI;
-                    
-                    line.style.width = `${width}px`;
-                    line.style.height = currentTool === 'pen' ? '3px' : '10px';
-                    line.style.backgroundColor = currentTool === 'pen' ? '#000' : '#f9f9f9';
-                    line.style.transformOrigin = '0 0';
-                    line.style.transform = `rotate(${angle}deg)`;
-                    
-                    canvas.appendChild(line);
-                    [lastX, lastY] = [e.offsetX, e.offsetY];
-                }
-            }
-            
-            function stopDrawing() {
-                isDrawing = false;
-            }
-            
-            // Adicionar caixa de texto
-            function addTextBox() {
-                const textBox = document.createElement('div');
-                textBox.className = 'text-box';
-                textBox.contentEditable = true;
-                textBox.style.left = '100px';
-                textBox.style.top = '100px';
-                
-                textBox.addEventListener('mousedown', function(e) {
-                    if (currentTool === 'select') {
-                        e.stopPropagation();
-                        let startX = e.clientX;
-                        let startY = e.clientY;
-                        let startLeft = parseInt(textBox.style.left);
-                        let startTop = parseInt(textBox.style.top);
-                        
-                        function moveTextBox(e) {
-                            const dx = e.clientX - startX;
-                            const dy = e.clientY - startY;
-                            textBox.style.left = `${startLeft + dx}px`;
-                            textBox.style.top = `${startTop + dy}px`;
-                        }
-                        
-                        function stopMoving() {
-                            document.removeEventListener('mousemove', moveTextBox);
-                            document.removeEventListener('mouseup', stopMoving);
-                        }
-                        
-                        document.addEventListener('mousemove', moveTextBox);
-                        document.addEventListener('mouseup', stopMoving);
-                    }
-                });
-                
-                canvas.appendChild(textBox);
-                textBox.focus();
-            }
-            
-            // Painel de stickers
-            function showStickerPanel() {
+            // Abrir painel de stickers
+            document.getElementById('sticker-tool').addEventListener('click', function() {
                 document.getElementById('sticker-panel').style.display = 'block';
-            }
+                document.getElementById('postit-panel').style.display = 'none';
+            });
             
-            document.querySelector('#sticker-panel .close-panel').addEventListener('click', function() {
+            // Abrir painel de post-its
+            document.getElementById('postit-tool').addEventListener('click', function() {
+                document.getElementById('postit-panel').style.display = 'block';
                 document.getElementById('sticker-panel').style.display = 'none';
             });
             
-            document.querySelectorAll('.sticker-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const stickerType = this.getAttribute('data-sticker');
-                    addSticker(stickerType);
+            // Fechar painéis
+            document.querySelectorAll('.close-panel').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.selection-panel').style.display = 'none';
+                });
+            });
+            
+            // Selecionar cor do post-it
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.color-option').forEach(opt => {
+                        opt.classList.remove('selected-color');
+                    });
+                    this.classList.add('selected-color');
+                    currentColor = this.getAttribute('data-color');
+                    addPostIt();
+                    document.getElementById('postit-panel').style.display = 'none';
+                });
+            });
+            
+            // Adicionar sticker selecionado
+            document.querySelectorAll('.sticker-option').forEach(sticker => {
+                sticker.addEventListener('click', function() {
+                    const type = this.getAttribute('data-sticker');
+                    addSticker(type);
                     document.getElementById('sticker-panel').style.display = 'none';
                 });
             });
             
+            // Função para adicionar sticker
             function addSticker(type) {
                 const sticker = document.createElement('img');
                 sticker.className = 'sticker';
-                sticker.style.left = '200px';
-                sticker.style.top = '200px';
+                sticker.setAttribute('draggable', 'false');
                 
-                // Usando ícones do Material Icons como exemplos
+                // Posição centralizada no canvas visível
+                const canvasRect = canvas.getBoundingClientRect();
+                const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+                
+                const left = (containerRect.width / 2 - canvasRect.left) - 30;
+                const top = (containerRect.height / 2 - canvasRect.top) - 30;
+                
+                sticker.style.left = `${left}px`;
+                sticker.style.top = `${top}px`;
+                
+                // Ícones do Material Symbols como stickers
                 switch(type) {
                     case 'happy':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/sentiment_satisfied/v11/24px.svg';
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg';
+                        break;
+                    case 'excited':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_excited/default/48px.svg';
                         break;
                     case 'sad':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/sentiment_dissatisfied/v11/24px.svg';
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_sad/default/48px.svg';
                         break;
                     case 'thumbs-up':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/thumb_up/v11/24px.svg';
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/thumb_up/default/48px.svg';
                         break;
                     case 'star':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/star/v11/24px.svg';
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/star/default/48px.svg';
+                        break;
+                    case 'heart':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/favorite/default/48px.svg';
+                        break;
+                    case 'celebration':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/celebration/default/48px.svg';
                         break;
                     case 'check':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/check_circle/v11/24px.svg';
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/check_circle/default/48px.svg';
                         break;
                     case 'priority':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/priority_high/v11/24px.svg';
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/priority_high/default/48px.svg';
+                        break;
+                    case 'idea':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/lightbulb/default/48px.svg';
+                        break;
+                    case 'question':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/question_mark/default/48px.svg';
+                        break;
+                    case 'warning':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/warning/default/48px.svg';
                         break;
                 }
                 
-                sticker.style.width = '50px';
-                sticker.style.height = '50px';
-                
-                // Tornar o sticker arrastável
                 makeDraggable(sticker);
-                
                 canvas.appendChild(sticker);
             }
             
-            // Painel de imagens
-            function showImagePanel() {
-                document.getElementById('image-panel').style.display = 'block';
+            // Função para adicionar post-it
+            function addPostIt() {
+                const postIt = document.createElement('div');
+                postIt.className = `post-it post-it-${currentColor}`;
+                
+                // Posição centralizada no canvas visível
+                const canvasRect = canvas.getBoundingClientRect();
+                const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+                
+                const left = (containerRect.width / 2 - canvasRect.left) - 100;
+                const top = (containerRect.height / 2 - canvasRect.top) - 75;
+                
+                postIt.style.left = `${left}px`;
+                postIt.style.top = `${top}px`;
+                
+                // Cabeçalho do post-it
+                const header = document.createElement('div');
+                header.className = 'post-it-header';
+                
+                const colorDot = document.createElement('div');
+                colorDot.className = 'post-it-color';
+                colorDot.style.backgroundColor = getColorValue(currentColor);
+                
+                const closeBtn = document.createElement('span');
+                closeBtn.className = 'post-it-close material-icons';
+                closeBtn.textContent = 'close';
+                closeBtn.addEventListener('click', function() {
+                    postIt.remove();
+                });
+                
+                header.appendChild(colorDot);
+                header.appendChild(closeBtn);
+                
+                // Conteúdo do post-it
+                const content = document.createElement('div');
+                content.className = 'post-it-content';
+                content.contentEditable = true;
+                content.textContent = 'Clique para editar...';
+                
+                content.addEventListener('focus', function() {
+                    if (this.textContent === 'Clique para editar...') {
+                        this.textContent = '';
+                    }
+                });
+                
+                content.addEventListener('blur', function() {
+                    if (this.textContent.trim() === '') {
+                        this.textContent = 'Clique para editar...';
+                    }
+                });
+                
+                // Montar o post-it
+                postIt.appendChild(header);
+                postIt.appendChild(content);
+                
+                makeDraggable(postIt);
+                canvas.appendChild(postIt);
+                
+                // Focar no conteúdo
+                setTimeout(() => {
+                    content.focus();
+                }, 0);
             }
             
-            document.querySelector('#image-panel .close-panel').addEventListener('click', function() {
-                document.getElementById('image-panel').style.display = 'none';
-            });
-            
-            document.getElementById('image-upload').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        addImage(event.target.result);
-                        document.getElementById('image-panel').style.display = 'none';
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            
-            document.querySelectorAll('.image-option').forEach(item => {
-                item.addEventListener('click', function() {
-                    const imageUrl = this.src;
-                    addImage(imageUrl);
-                    document.getElementById('image-panel').style.display = 'none';
-                });
-            });
-            
-            function addImage(src) {
-                const img = document.createElement('img');
-                img.src = src;
-                img.style.position = 'absolute';
-                img.style.left = '300px';
-                img.style.top = '300px';
-                img.style.maxWidth = '200px';
-                img.style.maxHeight = '200px';
-                
-                makeDraggable(img);
-                
-                canvas.appendChild(img);
+            // Função auxiliar para obter valor da cor
+            function getColorValue(colorName) {
+                const colors = {
+                    yellow: '#FFF475',
+                    blue: '#D7AEFB',
+                    green: '#CCFF90',
+                    pink: '#FDCFF8',
+                    purple: '#AECBFA'
+                };
+                return colors[colorName] || '#FFF475';
             }
             
             // Função para tornar elementos arrastáveis
@@ -402,14 +448,16 @@
                 element.onmousedown = dragMouseDown;
                 
                 function dragMouseDown(e) {
-                    if (currentTool === 'select') {
-                        e = e || window.event;
-                        e.preventDefault();
-                        pos3 = e.clientX;
-                        pos4 = e.clientY;
-                        document.onmouseup = closeDragElement;
-                        document.onmousemove = elementDrag;
-                    }
+                    e = e || window.event;
+                    e.preventDefault();
+                    
+                    // Não arrastar se estiver editando texto
+                    if (e.target.contentEditable === 'true') return;
+                    
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    document.onmouseup = closeDragElement;
+                    document.onmousemove = elementDrag;
                 }
                 
                 function elementDrag(e) {
@@ -419,8 +467,20 @@
                     pos2 = pos4 - e.clientY;
                     pos3 = e.clientX;
                     pos4 = e.clientY;
-                    element.style.top = (element.offsetTop - pos2) + "px";
-                    element.style.left = (element.offsetLeft - pos1) + "px";
+                    
+                    // Calcular nova posição
+                    const newTop = element.offsetTop - pos2;
+                    const newLeft = element.offsetLeft - pos1;
+                    
+                    // Limitar ao canvas
+                    const canvasRect = canvas.getBoundingClientRect();
+                    if (newTop >= 0 && newTop <= canvasRect.height - element.offsetHeight) {
+                        element.style.top = newTop + "px";
+                    }
+                    
+                    if (newLeft >= 0 && newLeft <= canvasRect.width - element.offsetWidth) {
+                        element.style.left = newLeft + "px";
+                    }
                 }
                 
                 function closeDragElement() {
@@ -428,35 +488,6 @@
                     document.onmousemove = null;
                 }
             }
-            
-            // Permitir rolagem com arrastar
-            let isPanning = false;
-            let startPanX, startPanY, startScrollLeft, startScrollTop;
-            
-            canvasContainer.addEventListener('mousedown', function(e) {
-                if (currentTool === 'select' && e.target === canvasContainer) {
-                    isPanning = true;
-                    startPanX = e.clientX;
-                    startPanY = e.clientY;
-                    startScrollLeft = canvasContainer.scrollLeft;
-                    startScrollTop = canvasContainer.scrollTop;
-                    canvasContainer.style.cursor = 'grabbing';
-                }
-            });
-            
-            document.addEventListener('mousemove', function(e) {
-                if (isPanning) {
-                    const dx = e.clientX - startPanX;
-                    const dy = e.clientY - startPanY;
-                    canvasContainer.scrollLeft = startScrollLeft - dx;
-                    canvasContainer.scrollTop = startScrollTop - dy;
-                }
-            });
-            
-            document.addEventListener('mouseup', function() {
-                isPanning = false;
-                canvasContainer.style.cursor = 'grab';
-            });
         });
     </script>
 </body>
