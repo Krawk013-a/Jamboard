@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jamboard Clone - Stickers e Post-its</title>
+    <title>Jamboard Clone Online</title>
     <style>
         body {
             margin: 0;
@@ -209,9 +209,41 @@
             border-color: #202124 !important;
             transform: scale(1.1);
         }
+        
+        /* Compartilhamento */
+        #share-panel {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 101;
+        }
+        
+        #share-link {
+            width: 300px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        #copy-link {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
     <div id="toolbar">
@@ -223,6 +255,13 @@
         <button class="tool-btn" id="postit-tool">
             <span class="material-icons tool-icon">note</span>
             <span>Post-it</span>
+        </button>
+        
+        <div style="flex-grow: 1;"></div>
+        
+        <button class="tool-btn" id="share-btn">
+            <span class="material-icons tool-icon">share</span>
+            <span>Compartilhar</span>
         </button>
     </div>
     
@@ -263,21 +302,68 @@
         </div>
     </div>
     
+    <!-- Painel de Compartilhamento -->
+    <div class="selection-panel" id="share-panel" style="display: none;">
+        <span class="close-panel">×</span>
+        <h3 class="panel-title">Compartilhar Quadro</h3>
+        <p>Compartilhe este link para colaboração em tempo real:</p>
+        <input type="text" id="share-link" readonly>
+        <button id="copy-link">Copiar Link</button>
+    </div>
+    
     <script>
+        // Configuração do Firebase (substitua com suas credenciais)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBO0l_QRSXEkcOc0Rpe9l9Uasj5q2aaNJ0",
+            authDomain: "jamboarde-65f0d.firebaseapp.com",
+            databaseURL: "https://jamboarde-65f0d-default-rtdb.firebaseio.com",
+            projectId: "jamboarde-65f0d",
+            storageBucket: "jamboarde-65f0d.firebasestorage.app",
+            messagingSenderId: "522289468110",
+            appId: "1:522289468110:web:2b2b1a44c37b6da865f69f"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
         document.addEventListener('DOMContentLoaded', function() {
             const canvas = document.getElementById('jamboard-canvas');
             let currentColor = 'yellow';
+            let boardId = getBoardIdFromURL();
+            let elements = {};
+            
+            // Se não houver ID na URL, cria um novo quadro
+            if (!boardId) {
+                boardId = generateBoardId();
+                window.history.pushState({}, '', `?board=${boardId}`);
+            }
+            
+            // Atualizar link de compartilhamento
+            updateShareLink();
+            
+            // Carregar quadro existente
+            loadBoard(boardId);
             
             // Abrir painel de stickers
             document.getElementById('sticker-tool').addEventListener('click', function() {
                 document.getElementById('sticker-panel').style.display = 'block';
                 document.getElementById('postit-panel').style.display = 'none';
+                document.getElementById('share-panel').style.display = 'none';
             });
             
             // Abrir painel de post-its
             document.getElementById('postit-tool').addEventListener('click', function() {
                 document.getElementById('postit-panel').style.display = 'block';
                 document.getElementById('sticker-panel').style.display = 'none';
+                document.getElementById('share-panel').style.display = 'none';
+            });
+            
+            // Abrir painel de compartilhamento
+            document.getElementById('share-btn').addEventListener('click', function() {
+                document.getElementById('share-panel').style.display = 'block';
+                document.getElementById('sticker-panel').style.display = 'none';
+                document.getElementById('postit-panel').style.display = 'none';
             });
             
             // Fechar painéis
@@ -285,6 +371,14 @@
                 btn.addEventListener('click', function() {
                     this.closest('.selection-panel').style.display = 'none';
                 });
+            });
+            
+            // Copiar link de compartilhamento
+            document.getElementById('copy-link').addEventListener('click', function() {
+                const shareLink = document.getElementById('share-link');
+                shareLink.select();
+                document.execCommand('copy');
+                alert('Link copiado para a área de transferência!');
             });
             
             // Selecionar cor do post-it
@@ -309,10 +403,53 @@
                 });
             });
             
-            // Função para adicionar sticker
+            // Função para gerar ID do quadro
+            function generateBoardId() {
+                return 'board-' + Math.random().toString(36).substr(2, 9);
+            }
+            
+            // Função para obter ID do quadro da URL
+            function getBoardIdFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('board');
+            }
+            
+            // Função para atualizar link de compartilhamento
+            function updateShareLink() {
+                const shareLink = document.getElementById('share-link');
+                shareLink.value = window.location.href;
+            }
+            
+            // Função para carregar quadro existente
+            function loadBoard(boardId) {
+                const boardRef = database.ref(`boards/${boardId}`);
+                
+                boardRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        // Limpar canvas
+                        canvas.innerHTML = '';
+                        elements = {};
+                        
+                        // Carregar elementos
+                        for (const elementId in data.elements) {
+                            const element = data.elements[elementId];
+                            if (element.type === 'sticker') {
+                                addStickerFromData(elementId, element);
+                            } else if (element.type === 'postit') {
+                                addPostItFromData(elementId, element);
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Função para adicionar sticker com sincronização
             function addSticker(type) {
+                const elementId = 'element-' + Date.now();
                 const sticker = document.createElement('img');
                 sticker.className = 'sticker';
+                sticker.id = elementId;
                 sticker.setAttribute('draggable', 'false');
                 
                 // Posição centralizada no canvas visível
@@ -325,54 +462,42 @@
                 sticker.style.left = `${left}px`;
                 sticker.style.top = `${top}px`;
                 
-                // Ícones do Material Symbols como stickers
-                switch(type) {
-                    case 'happy':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg';
-                        break;
-                    case 'excited':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_excited/default/48px.svg';
-                        break;
-                    case 'sad':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_sad/default/48px.svg';
-                        break;
-                    case 'thumbs-up':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/thumb_up/default/48px.svg';
-                        break;
-                    case 'star':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/star/default/48px.svg';
-                        break;
-                    case 'heart':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/favorite/default/48px.svg';
-                        break;
-                    case 'celebration':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/celebration/default/48px.svg';
-                        break;
-                    case 'check':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/check_circle/default/48px.svg';
-                        break;
-                    case 'priority':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/priority_high/default/48px.svg';
-                        break;
-                    case 'idea':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/lightbulb/default/48px.svg';
-                        break;
-                    case 'question':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/question_mark/default/48px.svg';
-                        break;
-                    case 'warning':
-                        sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/warning/default/48px.svg';
-                        break;
-                }
+                // Configurar sticker
+                sticker.src = getStickerUrl(type);
                 
-                makeDraggable(sticker);
+                // Adicionar ao Firebase
+                database.ref(`boards/${boardId}/elements/${elementId}`).set({
+                    type: 'sticker',
+                    stickerType: type,
+                    left: left,
+                    top: top
+                });
+                
+                makeDraggable(sticker, elementId);
                 canvas.appendChild(sticker);
             }
             
-            // Função para adicionar post-it
+            // Função para adicionar sticker a partir dos dados
+            function addStickerFromData(elementId, data) {
+                const sticker = document.createElement('img');
+                sticker.className = 'sticker';
+                sticker.id = elementId;
+                sticker.setAttribute('draggable', 'false');
+                
+                sticker.style.left = `${data.left}px`;
+                sticker.style.top = `${data.top}px`;
+                sticker.src = getStickerUrl(data.stickerType);
+                
+                makeDraggable(sticker, elementId);
+                canvas.appendChild(sticker);
+            }
+            
+            // Função para adicionar post-it com sincronização
             function addPostIt() {
+                const elementId = 'element-' + Date.now();
                 const postIt = document.createElement('div');
                 postIt.className = `post-it post-it-${currentColor}`;
+                postIt.id = elementId;
                 
                 // Posição centralizada no canvas visível
                 const canvasRect = canvas.getBoundingClientRect();
@@ -397,6 +522,8 @@
                 closeBtn.textContent = 'close';
                 closeBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
+                    // Remover do Firebase
+                    database.ref(`boards/${boardId}/elements/${elementId}`).remove();
                     postIt.remove();
                 });
                 
@@ -410,7 +537,7 @@
                 content.textContent = 'Clique para editar...';
                 
                 content.addEventListener('click', function(e) {
-                    e.stopPropagation(); // Impede a movimentação ao clicar no conteúdo
+                    e.stopPropagation();
                 });
                 
                 content.addEventListener('focus', function() {
@@ -423,6 +550,93 @@
                     if (this.textContent.trim() === '') {
                         this.textContent = 'Clique para editar...';
                     }
+                    // Atualizar no Firebase
+                    database.ref(`boards/${boardId}/elements/${elementId}/content`).set(this.textContent);
+                });
+                
+                // Atualizar conteúdo em tempo real
+                content.addEventListener('input', function() {
+                    database.ref(`boards/${boardId}/elements/${elementId}/content`).set(this.textContent);
+                });
+                
+                // Montar o post-it
+                postIt.appendChild(header);
+                postIt.appendChild(content);
+                
+                // Adicionar ao Firebase
+                database.ref(`boards/${boardId}/elements/${elementId}`).set({
+                    type: 'postit',
+                    color: currentColor,
+                    left: left,
+                    top: top,
+                    content: 'Clique para editar...'
+                });
+                
+                // Tornar arrastável apenas pelo cabeçalho
+                makeDraggable(postIt, elementId, header);
+                canvas.appendChild(postIt);
+                
+                // Focar no conteúdo
+                setTimeout(() => {
+                    content.focus();
+                }, 0);
+            }
+            
+            // Função para adicionar post-it a partir dos dados
+            function addPostItFromData(elementId, data) {
+                const postIt = document.createElement('div');
+                postIt.className = `post-it post-it-${data.color}`;
+                postIt.id = elementId;
+                postIt.style.left = `${data.left}px`;
+                postIt.style.top = `${data.top}px`;
+                
+                // Cabeçalho do post-it (área de movimentação)
+                const header = document.createElement('div');
+                header.className = 'post-it-header';
+                
+                const colorDot = document.createElement('div');
+                colorDot.className = 'post-it-color';
+                colorDot.style.backgroundColor = getColorValue(data.color);
+                
+                const closeBtn = document.createElement('span');
+                closeBtn.className = 'post-it-close material-icons';
+                closeBtn.textContent = 'close';
+                closeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // Remover do Firebase
+                    database.ref(`boards/${boardId}/elements/${elementId}`).remove();
+                    postIt.remove();
+                });
+                
+                header.appendChild(colorDot);
+                header.appendChild(closeBtn);
+                
+                // Conteúdo do post-it (área de edição)
+                const content = document.createElement('div');
+                content.className = 'post-it-content';
+                content.contentEditable = true;
+                content.textContent = data.content || 'Clique para editar...';
+                
+                content.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                content.addEventListener('focus', function() {
+                    if (this.textContent === 'Clique para editar...') {
+                        this.textContent = '';
+                    }
+                });
+                
+                content.addEventListener('blur', function() {
+                    if (this.textContent.trim() === '') {
+                        this.textContent = 'Clique para editar...';
+                    }
+                    // Atualizar no Firebase
+                    database.ref(`boards/${boardId}/elements/${elementId}/content`).set(this.textContent);
+                });
+                
+                content.addEventListener('input', function() {
+                    database.ref(`boards/${boardId}/elements/${elementId}/content`).set(this.textContent);
                 });
                 
                 // Montar o post-it
@@ -430,13 +644,27 @@
                 postIt.appendChild(content);
                 
                 // Tornar arrastável apenas pelo cabeçalho
-                makeDraggable(postIt, header);
+                makeDraggable(postIt, elementId, header);
                 canvas.appendChild(postIt);
-                
-                // Focar no conteúdo
-                setTimeout(() => {
-                    content.focus();
-                }, 0);
+            }
+            
+            // Função para obter URL do sticker
+            function getStickerUrl(type) {
+                const stickers = {
+                    happy: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg',
+                    excited: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_excited/default/48px.svg',
+                    sad: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sentiment_sad/default/48px.svg',
+                    'thumbs-up': 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/thumb_up/default/48px.svg',
+                    star: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/star/default/48px.svg',
+                    heart: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/favorite/default/48px.svg',
+                    celebration: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/celebration/default/48px.svg',
+                    check: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/check_circle/default/48px.svg',
+                    priority: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/priority_high/default/48px.svg',
+                    idea: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/lightbulb/default/48px.svg',
+                    question: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/question_mark/default/48px.svg',
+                    warning: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/warning/default/48px.svg'
+                };
+                return stickers[type] || stickers['happy'];
             }
             
             // Função auxiliar para obter valor da cor
@@ -451,10 +679,8 @@
                 return colors[colorName] || '#FFF475';
             }
             
-            // Função para tornar elementos arrastáveis (com elemento de controle opcional)
-            function makeDraggable(element, dragHandle = element) {
-                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-                
+            // Função para tornar elementos arrastáveis com sincronização
+            function makeDraggable(element, elementId, dragHandle = element) {
                 dragHandle.onmousedown = dragMouseDown;
                 
                 function dragMouseDown(e) {
@@ -462,32 +688,40 @@
                     e.preventDefault();
                     
                     // Obter a posição inicial do mouse
-                    pos3 = e.clientX;
-                    pos4 = e.clientY;
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startLeft = parseInt(element.style.left) || 0;
+                    const startTop = parseInt(element.style.top) || 0;
                     
                     document.onmouseup = closeDragElement;
                     document.onmousemove = elementDrag;
-                }
-                
-                function elementDrag(e) {
-                    e = e || window.event;
-                    e.preventDefault();
                     
-                    // Calcular a nova posição
-                    pos1 = pos3 - e.clientX;
-                    pos2 = pos4 - e.clientY;
-                    pos3 = e.clientX;
-                    pos4 = e.clientY;
+                    function elementDrag(e) {
+                        e = e || window.event;
+                        e.preventDefault();
+                        
+                        // Calcular a nova posição
+                        const dx = e.clientX - startX;
+                        const dy = e.clientY - startY;
+                        const newLeft = startLeft + dx;
+                        const newTop = startTop + dy;
+                        
+                        // Atualizar posição local
+                        element.style.left = `${newLeft}px`;
+                        element.style.top = `${newTop}px`;
+                        
+                        // Atualizar no Firebase
+                        database.ref(`boards/${boardId}/elements/${elementId}`).update({
+                            left: newLeft,
+                            top: newTop
+                        });
+                    }
                     
-                    // Atualizar a posição do elemento
-                    element.style.top = (element.offsetTop - pos2) + "px";
-                    element.style.left = (element.offsetLeft - pos1) + "px";
-                }
-                
-                function closeDragElement() {
-                    // Remover os event listeners quando soltar o mouse
-                    document.onmouseup = null;
-                    document.onmousemove = null;
+                    function closeDragElement() {
+                        // Remover os event listeners quando soltar o mouse
+                        document.onmouseup = null;
+                        document.onmousemove = null;
+                    }
                 }
             }
         });
