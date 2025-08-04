@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jamboard Clone Simples</title>
+    <title>Jamboard Clone Colaborativo</title>
     <style>
         body {
             margin: 0;
@@ -68,7 +68,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
-            background-color: #FFF475; /* Amarelo padrão */
+            background-color: #FFF475;
         }
         
         .post-it-header {
@@ -102,9 +102,41 @@
             width: 60px;
             height: 60px;
         }
+        
+        #share-panel {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 101;
+            display: none;
+        }
+        
+        #share-link {
+            width: 250px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        #copy-link {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
     <div id="toolbar">
@@ -116,35 +148,141 @@
             <span class="material-icons">mood</span>
             <span>Sticker</span>
         </button>
+        <div style="flex-grow: 1;"></div>
+        <button class="tool-btn" id="share-btn">
+            <span class="material-icons">share</span>
+            <span>Compartilhar</span>
+        </button>
     </div>
     
     <div id="canvas-container">
         <div id="jamboard-canvas"></div>
     </div>
 
+    <div id="share-panel">
+        <h3>Compartilhar Quadro</h3>
+        <p>Compartilhe este link:</p>
+        <input type="text" id="share-link" readonly>
+        <button id="copy-link">Copiar Link</button>
+    </div>
+
     <script>
+        // Configuração do Firebase com SUAS credenciais
+        const firebaseConfig = {
+            apiKey: "AIzaSyBO0l_QRSXEkcOc0Rpe9l9Uasj5q2aaNJ0",
+            authDomain: "jamboarde-65f0d.firebaseapp.com",
+            databaseURL: "https://jamboarde-65f0d-default-rtdb.firebaseio.com",
+            projectId: "jamboarde-65f0d",
+            storageBucket: "jamboarde-65f0d.appspot.com",
+            messagingSenderId: "522289468110",
+            appId: "1:522289468110:web:2b2b1a44c37b6da865f69f",
+            measurementId: "G-P95PL73W08"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         document.addEventListener('DOMContentLoaded', function() {
             const canvas = document.getElementById('jamboard-canvas');
+            let boardId = getBoardIdFromURL();
             
-            // Adicionar post-it
+            if (!boardId) {
+                boardId = generateBoardId();
+                window.history.pushState({}, '', `?board=${boardId}`);
+            }
+            
+            updateShareLink();
+            loadBoard(boardId);
+            
+            // Botões de ferramentas
             document.getElementById('postit-tool').addEventListener('click', function() {
                 addPostIt();
             });
             
-            // Adicionar sticker
             document.getElementById('sticker-tool').addEventListener('click', function() {
                 addSticker('happy');
             });
             
-            function addPostIt() {
+            // Compartilhamento
+            document.getElementById('share-btn').addEventListener('click', function() {
+                document.getElementById('share-panel').style.display = 'block';
+            });
+            
+            document.getElementById('copy-link').addEventListener('click', function() {
+                const shareLink = document.getElementById('share-link');
+                shareLink.select();
+                document.execCommand('copy');
+                alert('Link copiado!');
+            });
+
+            function generateBoardId() {
+                return 'board-' + Math.random().toString(36).substr(2, 9);
+            }
+
+            function getBoardIdFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('board');
+            }
+
+            function updateShareLink() {
+                document.getElementById('share-link').value = window.location.href;
+            }
+
+            function loadBoard(boardId) {
+                database.ref(`boards/${boardId}/elements`).on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        // Limpar apenas elementos não presentes nos dados
+                        const existingIds = Array.from(canvas.children).map(el => el.id);
+                        const dataIds = Object.keys(data);
+                        
+                        // Remover elementos que não estão mais no Firebase
+                        existingIds.forEach(id => {
+                            if (!dataIds.includes(id)) {
+                                const el = document.getElementById(id);
+                                if (el) el.remove();
+                            }
+                        });
+
+                        // Adicionar/atualizar elementos
+                        for (const elementId in data) {
+                            const element = data[elementId];
+                            let el = document.getElementById(elementId);
+                            
+                            if (!el) {
+                                if (element.type === 'postit') {
+                                    el = createPostItElement(elementId);
+                                    canvas.appendChild(el);
+                                } else if (element.type === 'sticker') {
+                                    el = createStickerElement(elementId);
+                                    canvas.appendChild(el);
+                                }
+                            }
+                            
+                            if (el) {
+                                // Atualizar posição
+                                el.style.left = `${element.left}px`;
+                                el.style.top = `${element.top}px`;
+                                
+                                // Atualizar conteúdo se for post-it
+                                if (element.type === 'postit') {
+                                    const contentEl = el.querySelector('.post-it-content');
+                                    if (contentEl && !contentEl.isSameNode(document.activeElement)) {
+                                        contentEl.textContent = element.content || 'Clique para editar...';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function createPostItElement(elementId) {
                 const postIt = document.createElement('div');
                 postIt.className = 'post-it';
+                postIt.id = elementId;
                 
-                // Posição centralizada
-                postIt.style.left = '100px';
-                postIt.style.top = '100px';
-                
-                // Cabeçalho do post-it
                 const header = document.createElement('div');
                 header.className = 'post-it-header';
                 
@@ -152,59 +290,122 @@
                 closeBtn.className = 'post-it-close material-icons';
                 closeBtn.textContent = 'close';
                 closeBtn.addEventListener('click', function() {
+                    database.ref(`boards/${boardId}/elements/${elementId}`).remove();
                     postIt.remove();
                 });
                 
                 header.appendChild(closeBtn);
                 
-                // Conteúdo do post-it
                 const content = document.createElement('div');
                 content.className = 'post-it-content';
                 content.contentEditable = true;
-                content.textContent = 'Clique para editar...';
+                
+                // Controle de edição
+                let isEditing = false;
                 
                 content.addEventListener('focus', function() {
+                    isEditing = true;
                     if (this.textContent === 'Clique para editar...') {
                         this.textContent = '';
                     }
                 });
                 
                 content.addEventListener('blur', function() {
+                    isEditing = false;
                     if (this.textContent.trim() === '') {
                         this.textContent = 'Clique para editar...';
                     }
+                    updatePostItInFirebase(elementId, postIt);
                 });
                 
-                // Montar o post-it
+                content.addEventListener('input', function() {
+                    if (isEditing) {
+                        // Debounce para evitar flickering
+                        clearTimeout(postIt.updateTimeout);
+                        postIt.updateTimeout = setTimeout(() => {
+                            updatePostItInFirebase(elementId, postIt);
+                        }, 500);
+                    }
+                });
+                
                 postIt.appendChild(header);
                 postIt.appendChild(content);
                 
-                // Tornar arrastável apenas pelo cabeçalho
-                makeDraggable(postIt, header);
+                makeDraggable(postIt, header, elementId);
+                
+                return postIt;
+            }
+
+            function createStickerElement(elementId) {
+                const sticker = document.createElement('img');
+                sticker.className = 'sticker';
+                sticker.id = elementId;
+                sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg';
+                
+                makeDraggable(sticker, sticker, elementId);
+                
+                return sticker;
+            }
+
+            function addPostIt() {
+                const elementId = 'element-' + Date.now();
+                const postIt = createPostItElement(elementId);
+                
+                // Posição inicial
+                postIt.style.left = '100px';
+                postIt.style.top = '100px';
+                
+                // Adicionar ao Firebase
+                database.ref(`boards/${boardId}/elements/${elementId}`).set({
+                    type: 'postit',
+                    left: 100,
+                    top: 100,
+                    content: 'Clique para editar...'
+                });
+                
                 canvas.appendChild(postIt);
                 
                 // Focar no conteúdo
                 setTimeout(() => {
-                    content.focus();
+                    postIt.querySelector('.post-it-content').focus();
                 }, 0);
             }
-            
+
             function addSticker(type) {
-                const sticker = document.createElement('img');
-                sticker.className = 'sticker';
-                sticker.src = getStickerUrl(type);
+                const elementId = 'element-' + Date.now();
+                const sticker = createStickerElement(elementId);
+                
+                // Posição inicial
                 sticker.style.left = '200px';
                 sticker.style.top = '200px';
                 
-                makeDraggable(sticker);
+                // Adicionar ao Firebase
+                database.ref(`boards/${boardId}/elements/${elementId}`).set({
+                    type: 'sticker',
+                    left: 200,
+                    top: 200
+                });
+                
                 canvas.appendChild(sticker);
             }
-            
-            function getStickerUrl(type) {
-                return 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg';
+
+            function updatePostItInFirebase(elementId, postIt) {
+                const content = postIt.querySelector('.post-it-content').textContent;
+                database.ref(`boards/${boardId}/elements/${elementId}`).update({
+                    left: parseInt(postIt.style.left) || 0,
+                    top: parseInt(postIt.style.top) || 0,
+                    content: content
+                });
             }
-            
-            function makeDraggable(element, dragHandle = element) {
+
+            function updateStickerInFirebase(elementId, sticker) {
+                database.ref(`boards/${boardId}/elements/${elementId}`).update({
+                    left: parseInt(sticker.style.left) || 0,
+                    top: parseInt(sticker.style.top) || 0
+                });
+            }
+
+            function makeDraggable(element, dragHandle, elementId) {
                 let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
                 
                 dragHandle.onmousedown = dragMouseDown;
@@ -225,13 +426,34 @@
                     pos2 = pos4 - e.clientY;
                     pos3 = e.clientX;
                     pos4 = e.clientY;
-                    element.style.top = (element.offsetTop - pos2) + "px";
-                    element.style.left = (element.offsetLeft - pos1) + "px";
+                    
+                    const newLeft = (element.offsetLeft - pos1);
+                    const newTop = (element.offsetTop - pos2);
+                    
+                    element.style.left = newLeft + "px";
+                    element.style.top = newTop + "px";
+                    
+                    // Atualizar no Firebase com debounce
+                    clearTimeout(element.dragTimeout);
+                    element.dragTimeout = setTimeout(() => {
+                        if (element.classList.contains('post-it')) {
+                            updatePostItInFirebase(elementId, element);
+                        } else {
+                            updateStickerInFirebase(elementId, element);
+                        }
+                    }, 100);
                 }
                 
                 function closeDragElement() {
                     document.onmouseup = null;
                     document.onmousemove = null;
+                    
+                    // Garantir que a posição final seja salva
+                    if (element.classList.contains('post-it')) {
+                        updatePostItInFirebase(elementId, element);
+                    } else {
+                        updateStickerInFirebase(elementId, element);
+                    }
                 }
             }
         });
