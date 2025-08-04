@@ -4,19 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jamboard Clone</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h1>Jamboard Clone</h1>
-    <div class="toolbar">
-        <label for="colorPicker">Cor:</label>
-        <input type="color" id="colorPicker" value="#000000">
-        <label for="brushSize">Pincel:</label>
-        <input type="range" id="brushSize" min="1" max="50" value="5">
+    <div class="main-container">
+        <div class="toolbar">
+            <button id="drawTool" class="tool active" title="Desenhar">&#9998;</button>
+            <button id="eraseTool" class="tool" title="Borracha">&#x232B;</button>
+            <button id="stickyTool" class="tool" title="Nota Adesiva">&#x1F4DD;</button>
+            <button id="textTool" class="tool" title="Texto">T</button>
+            <button id="imageTool" class="tool" title="Imagem">&#x1F4C4;</button>
+            <div class="tool-options">
+                <label for="colorPicker">Cor:</label>
+                <input type="color" id="colorPicker" value="#000000">
+                <label for="brushSize">Pincel:</label>
+                <input type="range" id="brushSize" min="1" max="50" value="5">
+            </div>
+            <button id="clearBoard" title="Limpar Quadro">&#x1F5D1;</button>
+            <button id="saveBoard" title="Salvar como Imagem">&#x1F4BE;</button>
+        </div>
+        <div id="board-container">
+            <canvas id="whiteboard"></canvas>
+            <div id="elements-container"></div>
+        </div>
     </div>
-    <canvas id="whiteboard"></canvas>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+    <script src="/script.js"></script>
 </body>
 </html>
