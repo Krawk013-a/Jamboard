@@ -4,32 +4,460 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jamboard Clone</title>
-    <link rel="stylesheet" href="/style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Google Sans', Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #f1f3f4;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        
+        .tool-btn {
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .tool-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .tool-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+        }
+        
+        #canvas-container {
+            position: absolute;
+            top: 60px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            overflow: auto;
+            background-color: #f9f9f9;
+        }
+        
+        #jamboard-canvas {
+            position: absolute;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            margin: 20px;
+            transform-origin: 0 0;
+        }
+        
+        .sticker {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+        }
+        
+        .text-box {
+            position: absolute;
+            min-width: 100px;
+            min-height: 30px;
+            border: 2px dashed #4285f4;
+            padding: 5px;
+            cursor: text;
+        }
+        
+        .sticker-panel, .image-panel {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            width: 300px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 10px;
+            z-index: 101;
+            display: none;
+        }
+        
+        .sticker-item, .image-option {
+            width: 80px;
+            height: 80px;
+            margin: 5px;
+            cursor: pointer;
+            object-fit: contain;
+        }
+        
+        .close-panel {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <div class="main-container">
-        <div class="toolbar">
-            <button id="drawTool" class="tool active" title="Desenhar">&#9998;</button>
-            <button id="eraseTool" class="tool" title="Borracha">&#x232B;</button>
-            <button id="stickyTool" class="tool" title="Nota Adesiva">&#x1F4DD;</button>
-            <button id="textTool" class="tool" title="Texto">T</button>
-            <button id="imageTool" class="tool" title="Imagem">&#x1F4C4;</button>
-            <div class="tool-options">
-                <label for="colorPicker">Cor:</label>
-                <input type="color" id="colorPicker" value="#000000">
-                <label for="brushSize">Pincel:</label>
-                <input type="range" id="brushSize" min="1" max="50" value="5">
-            </div>
-            <button id="clearBoard" title="Limpar Quadro">&#x1F5D1;</button>
-            <button id="saveBoard" title="Salvar como Imagem">&#x1F4BE;</button>
-        </div>
-        <div id="board-container">
-            <canvas id="whiteboard"></canvas>
-            <div id="elements-container"></div>
+    <div id="toolbar">
+        <button class="tool-btn" id="select-tool">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/select_all/v11/24px.svg" class="tool-icon" alt="Selecionar">
+            <span>Selecionar</span>
+        </button>
+        
+        <button class="tool-btn" id="pen-tool">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/gesture/v11/24px.svg" class="tool-icon" alt="Caneta">
+            <span>Caneta</span>
+        </button>
+        
+        <button class="tool-btn" id="eraser-tool">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/ink_eraser/v11/24px.svg" class="tool-icon" alt="Borracha">
+            <span>Borracha</span>
+        </button>
+        
+        <button class="tool-btn" id="text-tool">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/text_fields/v11/24px.svg" class="tool-icon" alt="Texto">
+            <span>Texto</span>
+        </button>
+        
+        <button class="tool-btn" id="sticker-tool">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/insert_emoticon/v11/24px.svg" class="tool-icon" alt="Sticker">
+            <span>Sticker</span>
+        </button>
+        
+        <button class="tool-btn" id="image-tool">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/insert_photo/v11/24px.svg" class="tool-icon" alt="Imagem">
+            <span>Imagem</span>
+        </button>
+        
+        <div style="flex-grow: 1;"></div>
+        
+        <button class="tool-btn" id="zoom-in">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/zoom_in/v11/24px.svg" class="tool-icon" alt="Zoom In">
+        </button>
+        
+        <button class="tool-btn" id="zoom-out">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/zoom_out/v11/24px.svg" class="tool-icon" alt="Zoom Out">
+        </button>
+    </div>
+    
+    <div id="canvas-container">
+        <div id="jamboard-canvas" style="width: 1600px; height: 900px;"></div>
+    </div>
+    
+    <div class="sticker-panel" id="sticker-panel">
+        <span class="close-panel">×</span>
+        <h3>Stickers</h3>
+        <div id="sticker-list">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/sentiment_satisfied/v11/24px.svg" class="sticker-item" data-sticker="happy">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/sentiment_dissatisfied/v11/24px.svg" class="sticker-item" data-sticker="sad">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/thumb_up/v11/24px.svg" class="sticker-item" data-sticker="thumbs-up">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/star/v11/24px.svg" class="sticker-item" data-sticker="star">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/check_circle/v11/24px.svg" class="sticker-item" data-sticker="check">
+            <img src="https://fonts.gstatic.com/s/i/googlematerialicons/priority_high/v11/24px.svg" class="sticker-item" data-sticker="priority">
         </div>
     </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/script.js"></script>
+    
+    <div class="image-panel" id="image-panel">
+        <span class="close-panel">×</span>
+        <h3>Inserir Imagem</h3>
+        <input type="file" id="image-upload" accept="image/*">
+        <div id="image-options">
+            <h4>Imagens de exemplo</h4>
+            <img src="https://via.placeholder.com/150" class="image-option" data-image="placeholder1">
+            <img src="https://via.placeholder.com/150/0000FF/FFFFFF" class="image-option" data-image="placeholder2">
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('jamboard-canvas');
+            const canvasContainer = document.getElementById('canvas-container');
+            let currentTool = 'select';
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+            let scale = 1;
+            
+            // Ferramentas
+            document.getElementById('select-tool').addEventListener('click', () => currentTool = 'select');
+            document.getElementById('pen-tool').addEventListener('click', () => currentTool = 'pen');
+            document.getElementById('eraser-tool').addEventListener('click', () => currentTool = 'eraser');
+            document.getElementById('text-tool').addEventListener('click', addTextBox);
+            document.getElementById('sticker-tool').addEventListener('click', showStickerPanel);
+            document.getElementById('image-tool').addEventListener('click', showImagePanel);
+            
+            // Zoom
+            document.getElementById('zoom-in').addEventListener('click', () => {
+                scale += 0.1;
+                canvas.style.transform = `scale(${scale})`;
+            });
+            
+            document.getElementById('zoom-out').addEventListener('click', () => {
+                if (scale > 0.2) {
+                    scale -= 0.1;
+                    canvas.style.transform = `scale(${scale})`;
+                }
+            });
+            
+            // Desenho com caneta
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            function startDrawing(e) {
+                if (currentTool === 'pen' || currentTool === 'eraser') {
+                    isDrawing = true;
+                    [lastX, lastY] = [e.offsetX, e.offsetY];
+                    
+                    const dot = document.createElement('div');
+                    dot.style.position = 'absolute';
+                    dot.style.left = `${lastX}px`;
+                    dot.style.top = `${lastY}px`;
+                    dot.style.width = currentTool === 'pen' ? '3px' : '10px';
+                    dot.style.height = currentTool === 'pen' ? '3px' : '10px';
+                    dot.style.backgroundColor = currentTool === 'pen' ? '#000' : '#f9f9f9';
+                    dot.style.borderRadius = '50%';
+                    canvas.appendChild(dot);
+                }
+            }
+            
+            function draw(e) {
+                if (!isDrawing) return;
+                
+                if (currentTool === 'pen' || currentTool === 'eraser') {
+                    const line = document.createElement('div');
+                    line.style.position = 'absolute';
+                    line.style.left = `${lastX}px`;
+                    line.style.top = `${lastY}px`;
+                    
+                    const width = Math.sqrt(Math.pow(e.offsetX - lastX, 2) + Math.pow(e.offsetY - lastY, 2));
+                    const angle = Math.atan2(e.offsetY - lastY, e.offsetX - lastX) * 180 / Math.PI;
+                    
+                    line.style.width = `${width}px`;
+                    line.style.height = currentTool === 'pen' ? '3px' : '10px';
+                    line.style.backgroundColor = currentTool === 'pen' ? '#000' : '#f9f9f9';
+                    line.style.transformOrigin = '0 0';
+                    line.style.transform = `rotate(${angle}deg)`;
+                    
+                    canvas.appendChild(line);
+                    [lastX, lastY] = [e.offsetX, e.offsetY];
+                }
+            }
+            
+            function stopDrawing() {
+                isDrawing = false;
+            }
+            
+            // Adicionar caixa de texto
+            function addTextBox() {
+                const textBox = document.createElement('div');
+                textBox.className = 'text-box';
+                textBox.contentEditable = true;
+                textBox.style.left = '100px';
+                textBox.style.top = '100px';
+                
+                textBox.addEventListener('mousedown', function(e) {
+                    if (currentTool === 'select') {
+                        e.stopPropagation();
+                        let startX = e.clientX;
+                        let startY = e.clientY;
+                        let startLeft = parseInt(textBox.style.left);
+                        let startTop = parseInt(textBox.style.top);
+                        
+                        function moveTextBox(e) {
+                            const dx = e.clientX - startX;
+                            const dy = e.clientY - startY;
+                            textBox.style.left = `${startLeft + dx}px`;
+                            textBox.style.top = `${startTop + dy}px`;
+                        }
+                        
+                        function stopMoving() {
+                            document.removeEventListener('mousemove', moveTextBox);
+                            document.removeEventListener('mouseup', stopMoving);
+                        }
+                        
+                        document.addEventListener('mousemove', moveTextBox);
+                        document.addEventListener('mouseup', stopMoving);
+                    }
+                });
+                
+                canvas.appendChild(textBox);
+                textBox.focus();
+            }
+            
+            // Painel de stickers
+            function showStickerPanel() {
+                document.getElementById('sticker-panel').style.display = 'block';
+            }
+            
+            document.querySelector('#sticker-panel .close-panel').addEventListener('click', function() {
+                document.getElementById('sticker-panel').style.display = 'none';
+            });
+            
+            document.querySelectorAll('.sticker-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const stickerType = this.getAttribute('data-sticker');
+                    addSticker(stickerType);
+                    document.getElementById('sticker-panel').style.display = 'none';
+                });
+            });
+            
+            function addSticker(type) {
+                const sticker = document.createElement('img');
+                sticker.className = 'sticker';
+                sticker.style.left = '200px';
+                sticker.style.top = '200px';
+                
+                // Usando ícones do Material Icons como exemplos
+                switch(type) {
+                    case 'happy':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/sentiment_satisfied/v11/24px.svg';
+                        break;
+                    case 'sad':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/sentiment_dissatisfied/v11/24px.svg';
+                        break;
+                    case 'thumbs-up':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/thumb_up/v11/24px.svg';
+                        break;
+                    case 'star':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/star/v11/24px.svg';
+                        break;
+                    case 'check':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/check_circle/v11/24px.svg';
+                        break;
+                    case 'priority':
+                        sticker.src = 'https://fonts.gstatic.com/s/i/googlematerialicons/priority_high/v11/24px.svg';
+                        break;
+                }
+                
+                sticker.style.width = '50px';
+                sticker.style.height = '50px';
+                
+                // Tornar o sticker arrastável
+                makeDraggable(sticker);
+                
+                canvas.appendChild(sticker);
+            }
+            
+            // Painel de imagens
+            function showImagePanel() {
+                document.getElementById('image-panel').style.display = 'block';
+            }
+            
+            document.querySelector('#image-panel .close-panel').addEventListener('click', function() {
+                document.getElementById('image-panel').style.display = 'none';
+            });
+            
+            document.getElementById('image-upload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        addImage(event.target.result);
+                        document.getElementById('image-panel').style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            document.querySelectorAll('.image-option').forEach(item => {
+                item.addEventListener('click', function() {
+                    const imageUrl = this.src;
+                    addImage(imageUrl);
+                    document.getElementById('image-panel').style.display = 'none';
+                });
+            });
+            
+            function addImage(src) {
+                const img = document.createElement('img');
+                img.src = src;
+                img.style.position = 'absolute';
+                img.style.left = '300px';
+                img.style.top = '300px';
+                img.style.maxWidth = '200px';
+                img.style.maxHeight = '200px';
+                
+                makeDraggable(img);
+                
+                canvas.appendChild(img);
+            }
+            
+            // Função para tornar elementos arrastáveis
+            function makeDraggable(element) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                
+                element.onmousedown = dragMouseDown;
+                
+                function dragMouseDown(e) {
+                    if (currentTool === 'select') {
+                        e = e || window.event;
+                        e.preventDefault();
+                        pos3 = e.clientX;
+                        pos4 = e.clientY;
+                        document.onmouseup = closeDragElement;
+                        document.onmousemove = elementDrag;
+                    }
+                }
+                
+                function elementDrag(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    element.style.top = (element.offsetTop - pos2) + "px";
+                    element.style.left = (element.offsetLeft - pos1) + "px";
+                }
+                
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                }
+            }
+            
+            // Permitir rolagem com arrastar
+            let isPanning = false;
+            let startPanX, startPanY, startScrollLeft, startScrollTop;
+            
+            canvasContainer.addEventListener('mousedown', function(e) {
+                if (currentTool === 'select' && e.target === canvasContainer) {
+                    isPanning = true;
+                    startPanX = e.clientX;
+                    startPanY = e.clientY;
+                    startScrollLeft = canvasContainer.scrollLeft;
+                    startScrollTop = canvasContainer.scrollTop;
+                    canvasContainer.style.cursor = 'grabbing';
+                }
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (isPanning) {
+                    const dx = e.clientX - startPanX;
+                    const dy = e.clientY - startPanY;
+                    canvasContainer.scrollLeft = startScrollLeft - dx;
+                    canvasContainer.scrollTop = startScrollTop - dy;
+                }
+            });
+            
+            document.addEventListener('mouseup', function() {
+                isPanning = false;
+                canvasContainer.style.cursor = 'grab';
+            });
+        });
+    </script>
 </body>
 </html>
