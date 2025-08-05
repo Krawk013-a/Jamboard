@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jamboard Clone Colaborativo</title>
+    <title>Jamboard Clone Simplificado</title>
     <style>
         body {
             margin: 0;
@@ -96,13 +96,6 @@
             min-height: 100px;
         }
         
-        .sticker {
-            position: absolute;
-            cursor: move;
-            width: 60px;
-            height: 60px;
-        }
-        
         #share-panel {
             position: fixed;
             top: 70px;
@@ -131,6 +124,15 @@
             border-radius: 4px;
             cursor: pointer;
         }
+        
+        .close-share {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            color: #5f6368;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -144,10 +146,6 @@
             <span class="material-icons">note</span>
             <span>Post-it</span>
         </button>
-        <button class="tool-btn" id="sticker-tool">
-            <span class="material-icons">mood</span>
-            <span>Sticker</span>
-        </button>
         <div style="flex-grow: 1;"></div>
         <button class="tool-btn" id="share-btn">
             <span class="material-icons">share</span>
@@ -160,6 +158,7 @@
     </div>
 
     <div id="share-panel">
+        <span class="close-share">×</span>
         <h3>Compartilhar Quadro</h3>
         <p>Compartilhe este link:</p>
         <input type="text" id="share-link" readonly>
@@ -167,7 +166,7 @@
     </div>
 
     <script>
-        // Configuração do Firebase com SUAS credenciais
+        // Configuração do Firebase com suas credenciais
         const firebaseConfig = {
             apiKey: "AIzaSyBO0l_QRSXEkcOc0Rpe9l9Uasj5q2aaNJ0",
             authDomain: "jamboarde-65f0d.firebaseapp.com",
@@ -195,25 +194,27 @@
             updateShareLink();
             loadBoard(boardId);
             
-            // Botões de ferramentas
+            // Botão de post-it
             document.getElementById('postit-tool').addEventListener('click', function() {
                 addPostIt();
             });
             
-            document.getElementById('sticker-tool').addEventListener('click', function() {
-                addSticker('happy');
-            });
-            
-            // Compartilhamento
+            // Botão de compartilhamento
             document.getElementById('share-btn').addEventListener('click', function() {
                 document.getElementById('share-panel').style.display = 'block';
             });
             
+            // Fechar painel de compartilhamento
+            document.querySelector('.close-share').addEventListener('click', function() {
+                document.getElementById('share-panel').style.display = 'none';
+            });
+            
+            // Copiar link
             document.getElementById('copy-link').addEventListener('click', function() {
                 const shareLink = document.getElementById('share-link');
                 shareLink.select();
                 document.execCommand('copy');
-                alert('Link copiado!');
+                alert('Link copiado para a área de transferência!');
             });
 
             function generateBoardId() {
@@ -250,14 +251,9 @@
                             const element = data[elementId];
                             let el = document.getElementById(elementId);
                             
-                            if (!el) {
-                                if (element.type === 'postit') {
-                                    el = createPostItElement(elementId);
-                                    canvas.appendChild(el);
-                                } else if (element.type === 'sticker') {
-                                    el = createStickerElement(elementId);
-                                    canvas.appendChild(el);
-                                }
+                            if (!el && element.type === 'postit') {
+                                el = createPostItElement(elementId);
+                                canvas.appendChild(el);
                             }
                             
                             if (el) {
@@ -266,11 +262,9 @@
                                 el.style.top = `${element.top}px`;
                                 
                                 // Atualizar conteúdo se for post-it
-                                if (element.type === 'postit') {
-                                    const contentEl = el.querySelector('.post-it-content');
-                                    if (contentEl && !contentEl.isSameNode(document.activeElement)) {
-                                        contentEl.textContent = element.content || 'Clique para editar...';
-                                    }
+                                const contentEl = el.querySelector('.post-it-content');
+                                if (contentEl && !contentEl.isSameNode(document.activeElement)) {
+                                    contentEl.textContent = element.content || 'Clique para editar...';
                                 }
                             }
                         }
@@ -336,17 +330,6 @@
                 return postIt;
             }
 
-            function createStickerElement(elementId) {
-                const sticker = document.createElement('img');
-                sticker.className = 'sticker';
-                sticker.id = elementId;
-                sticker.src = 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/mood/default/48px.svg';
-                
-                makeDraggable(sticker, sticker, elementId);
-                
-                return sticker;
-            }
-
             function addPostIt() {
                 const elementId = 'element-' + Date.now();
                 const postIt = createPostItElement(elementId);
@@ -371,37 +354,12 @@
                 }, 0);
             }
 
-            function addSticker(type) {
-                const elementId = 'element-' + Date.now();
-                const sticker = createStickerElement(elementId);
-                
-                // Posição inicial
-                sticker.style.left = '200px';
-                sticker.style.top = '200px';
-                
-                // Adicionar ao Firebase
-                database.ref(`boards/${boardId}/elements/${elementId}`).set({
-                    type: 'sticker',
-                    left: 200,
-                    top: 200
-                });
-                
-                canvas.appendChild(sticker);
-            }
-
             function updatePostItInFirebase(elementId, postIt) {
                 const content = postIt.querySelector('.post-it-content').textContent;
                 database.ref(`boards/${boardId}/elements/${elementId}`).update({
                     left: parseInt(postIt.style.left) || 0,
                     top: parseInt(postIt.style.top) || 0,
                     content: content
-                });
-            }
-
-            function updateStickerInFirebase(elementId, sticker) {
-                database.ref(`boards/${boardId}/elements/${elementId}`).update({
-                    left: parseInt(sticker.style.left) || 0,
-                    top: parseInt(sticker.style.top) || 0
                 });
             }
 
@@ -436,11 +394,7 @@
                     // Atualizar no Firebase com debounce
                     clearTimeout(element.dragTimeout);
                     element.dragTimeout = setTimeout(() => {
-                        if (element.classList.contains('post-it')) {
-                            updatePostItInFirebase(elementId, element);
-                        } else {
-                            updateStickerInFirebase(elementId, element);
-                        }
+                        updatePostItInFirebase(elementId, element);
                     }, 100);
                 }
                 
@@ -449,11 +403,7 @@
                     document.onmousemove = null;
                     
                     // Garantir que a posição final seja salva
-                    if (element.classList.contains('post-it')) {
-                        updatePostItInFirebase(elementId, element);
-                    } else {
-                        updateStickerInFirebase(elementId, element);
-                    }
+                    updatePostItInFirebase(elementId, element);
                 }
             }
         });
